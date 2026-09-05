@@ -1,0 +1,32 @@
+name: Q6 Reusable
+
+on:
+  workflow_call:
+    inputs:
+      target_env:
+        description: "Target environment"
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Run greet composite action
+        id: greet
+        uses: ./.github/actions/greet
+        with:
+          name: GitHub Actions
+          env_name: ${{ inputs.target_env }}
+
+      - name: Echo greeting and fake deploy
+        env:
+          GREETING: ${{ steps.greet.outputs.greeting }}
+          TARGET_ENV: ${{ inputs.target_env }}
+        shell: bash
+        run: |
+          echo "$GREETING"
+          echo "Deploying to ${TARGET_ENV}... done."

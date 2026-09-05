@@ -1,0 +1,37 @@
+name: Greet
+description: "Simple composite greeting action"
+
+inputs:
+  name:
+    description: "Name to greet"
+    required: true
+  env_name:
+    description: "Environment name"
+    required: false
+    default: dev
+
+outputs:
+  greeting:
+    description: "Generated greeting"
+    value: ${{ steps.make-greeting.outputs.greeting }}
+
+runs:
+  using: composite
+  steps:
+    - name: Build greeting
+      id: make-greeting
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        ENV_NAME: ${{ inputs.env_name }}
+      run: |
+        greeting="Hello ${NAME}, welcome to ${ENV_NAME}!"
+        echo "greeting=$greeting" >> "$GITHUB_OUTPUT"
+
+    - name: Show greeting
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        ENV_NAME: ${{ inputs.env_name }}
+      run: |
+        echo "Preparing greeting for ${NAME} in ${ENV_NAME}"

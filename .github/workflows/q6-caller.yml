@@ -1,0 +1,16 @@
+name: Q6 Caller
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dev:
+    uses: ./.github/workflows/q6-reusable.yml
+    with:
+      target_env: dev
+
+  prod:
+    needs: dev
+    uses: ./.github/workflows/q6-reusable.yml
+    with:
+      target_env: prod

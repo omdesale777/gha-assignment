@@ -1,0 +1,81 @@
+name: Q2 Matrix Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-22.04]
+        node: [18, 20]
+        exclude:
+          - os: ubuntu-22.04
+            node: 18
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Cache npm data
+        uses: actions/cache@v5
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node }}-npm-
+            ${{ runner.os }}-node-
+
+      - name: Print Node and npm versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
+
+      - name: Write matrix report
+        shell: bash
+        run: |
+          mkdir -p out
+          {
+            echo "Runner OS: ${{ matrix.os }}"
+            echo "Node version: $(node --version)"
+            echo "npm version: $(npm --version)"
+            echo "Run number: $GITHUB_RUN_NUMBER"
+          } > "out/report-${{ matrix.os }}-${{ matrix.node }}.txt"
+
+      - name: Upload matrix report
+        uses: actions/upload-artifact@v6
+        with:
+          name: report-${{ matrix.os }}-node-${{ matrix.node }}
+          path: out/report-${{ matrix.os }}-${{ matrix.node }}.txt
+          if-no-files-found: error
+
+  collect:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ always() }}
+    steps:
+      - name: Download all matrix artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: all-reports
+
+      - name: Print every downloaded file
+        shell: bash
+        run: |
+          find all-reports -type f -print
+          while IFS= read -r file; do
+            echo "===== $file ====="
+            cat "$file"
+            echo
+          done < <(find all-reports -type f | sort)
